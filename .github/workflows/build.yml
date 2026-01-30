@@ -8,7 +8,7 @@ on:
     branches: [ "main", "master" ]
 
 permissions:
-  contents: write
+  contents: write # 允许 Action 创建 Release
 
 jobs:
   build:
@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # cache: 'npm'  <-- 注释掉或删掉这一行，因为仓库里没有 package-lock.json
+          # cache: 'npm' # 已注释：防止因缺少 package-lock.json 报错
 
       - name: Install dependencies
         run: npm install
@@ -32,14 +32,8 @@ jobs:
 
       - name: Package Plugin
         run: |
-          PLUGIN_NAME="napcat-plugin-group-manager"
-          mkdir -p "$PLUGIN_NAME"
-          
-          cp package.json "$PLUGIN_NAME/"
-          cp -r dist "$PLUGIN_NAME/"
-          cp README.md "$PLUGIN_NAME/" 2>/dev/null || true
-          
-          zip -r "${PLUGIN_NAME}.zip" "$PLUGIN_NAME"
+          # 直接将核心文件打包到 zip 根目录，不再套一层文件夹
+          zip -r napcat-plugin-group-manager.zip package.json dist README.md LICENSE
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
