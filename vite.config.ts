@@ -6,7 +6,7 @@ import { builtinModules } from 'module';
 export default defineConfig({
     build: {
         target: 'esnext',
-        minify: false, // 不压缩以便调试
+        minify: false, // 不压缩，方便调试
         lib: {
             entry: resolve(__dirname, 'src/index.ts'),
             formats: ['es'],
