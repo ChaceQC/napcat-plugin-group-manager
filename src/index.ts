@@ -1,3 +1,4 @@
+// @ts-ignore
 import { NapCatPluginContext } from 'napcat-types';
 import { loadConfig, saveConfig, currentConfig, buildConfigUI } from './config';
 import { onMessage, onEvent } from './handlers';
