@@ -7,11 +7,12 @@ on:
   pull_request:
     branches: [ "main", "master" ]
 
+permissions:
+  contents: write # 允许 Action 创建 Release
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # 需要写权限来创建 Release
 
     steps:
       - name: Checkout code
@@ -21,7 +22,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm' # 如果您使用 pnpm，请改为 'pnpm' 并在下方添加 pnpm setup
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm install
@@ -31,32 +32,34 @@ jobs:
 
       - name: Package Plugin
         run: |
-          # 创建一个临时目录用于存放打包内容
-          mkdir -p temp_pack/napcat-plugin-group-manager
+          # 1. 创建一个临时目录，目录名就是插件名
+          # 这样用户解压 zip 后会得到一个完整的文件夹，方便直接丢进 plugins 目录
+          PLUGIN_NAME="napcat-plugin-group-manager"
+          mkdir -p "$PLUGIN_NAME"
           
-          # 复制必要文件：dist 目录, package.json
-          cp -r dist temp_pack/napcat-plugin-group-manager/
-          cp package.json temp_pack/napcat-plugin-group-manager/
+          # 2. 复制必要文件到该目录
+          # 注意：NapCat 插件需要 package.json 和 dist 目录
+          cp package.json "$PLUGIN_NAME/"
+          cp -r dist "$PLUGIN_NAME/"
           
-          # 如果有 README 也带上，方便查看
-          cp README.md temp_pack/napcat-plugin-group-manager/ 2>/dev/null || true
+          # 3. 如果有 README 和 LICENSE 也带上（可选）
+          cp README.md "$PLUGIN_NAME/" 2>/dev/null || true
+          cp LICENSE "$PLUGIN_NAME/" 2>/dev/null || true
           
-          # 进入临时目录打包，这样解压后直接是一个文件夹，符合安装规范
-          cd temp_pack
-          zip -r ../napcat-plugin-group-manager.zip napcat-plugin-group-manager
+          # 4. 压缩该目录
+          zip -r "${PLUGIN_NAME}.zip" "$PLUGIN_NAME"
 
-      # 上传构建产物到 GitHub Actions 页面（方便测试下载）
+      # 上传构建产物到 GitHub Actions 页面（方便在不发版时下载测试）
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: napcat-plugin-group-manager
           path: napcat-plugin-group-manager.zip
 
-      # 仅在推送 tag 时创建 GitHub Release
+      # 仅在推送 tag 时创建 GitHub Release 并上传 zip
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: napcat-plugin-group-manager.zip
-          # body: "Release description here" # 可选：自定义发布说明
-          generate_release_notes: true # 自动生成变更日志
+          generate_release_notes: true # 自动根据 commit 生成更新日志
