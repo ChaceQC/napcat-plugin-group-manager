@@ -3,6 +3,20 @@ import { NapCatPluginContext } from 'napcat-types';
 import { currentConfig, saveConfig } from './config';
 import { LockedUser, TargetedUser } from './types';
 
+// 辅助：HTML 实体解码 (新增)
+// 用于处理 &#91;Bot&#93; 这类转义字符
+function decodeHtml(str: string): string {
+  if (!str) return str;
+  return str
+      .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec)) // 十进制实体 &#91; -> [
+      .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16))) // 十六进制
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'");
+}
+
 // 辅助：API 调用封装
 async function callOB11 (ctx: NapCatPluginContext, action: string, params: any) {
   try {
@@ -189,7 +203,23 @@ export async function onMessage (ctx: NapCatPluginContext, event: any) {
     if (command === '/lockname') {
       const isSelf = !targetId;
       const operateTargetId = targetId || userId;
-      const newName = isSelf ? parts[1] : parts[2];
+
+      // [修改] 提取昵称逻辑：支持空格
+      let rawName = parts.slice(isSelf ? 1 : 2).join(' ').trim();
+
+      // [修改] URL 解码逻辑
+      try {
+        if (rawName && rawName.includes('%')) {
+          rawName = decodeURIComponent(rawName);
+        }
+      } catch (e) { }
+
+      // [新增] HTML 实体解码逻辑 (解决 &#91;Bot&#93; 问题)
+      if (rawName) {
+        rawName = decodeHtml(rawName);
+      }
+
+      const newName = rawName;
 
       if (!newName) {
         await callOB11(ctx, 'send_group_msg', { group_id: groupId, message: '请指定要锁定的昵称' });
