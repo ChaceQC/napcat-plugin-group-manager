@@ -100,5 +100,5 @@ napcat-plugin-group-manager/
 ---
 
 ## 📝 开发信息
-- 版本: 1.2.0
+- 版本: 1.2.1
 - 语言: TypeScript
